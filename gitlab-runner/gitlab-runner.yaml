@@ -48,7 +48,7 @@ objects:
     creationTimestamp: null
     labels:
       app: gitlab-runner
-    name: is-gitlab-runner
+    name: gitlab-runner
   spec:
     dockerImageRepository: ""
     tags:
@@ -56,7 +56,7 @@ objects:
        from:
          kind: DockerImage
          name: gitlab/gitlab-runner:${GITLAB_RUNNER_IMAGE_DOCKER_TAG}
-       name: gitlab_runner_pseudo_tag
+       name: ${GITLAB_RUNNER_IMAGE_DOCKER_TAG}
        importPolicy:
          scheduled: true
   status:
