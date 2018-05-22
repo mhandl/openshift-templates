@@ -1,11 +1,11 @@
-#This file is part of https://gitlab.com/oprudkyi/openshift-templates
+# This file is part of https://github.com/hustlahusky/openshift-templates
 #
-#Partially based on :
-# https://gitlab.com/gitlab-org/omnibus-gitlab/blob/ux-demo/docker/openshift-ci-template.json
-# http://blog.lwolf.org/post/how-to-easily-deploy-gitlab-on-kubernetes/
-# https://github.com/lwolf/kubernetes-gitlab/tree/master/minio
+# Partially based on :
+#   https://gitlab.com/gitlab-org/omnibus-gitlab/blob/ux-demo/docker/openshift-ci-template.json
+#   https://gitlab.com/oprudkyi/openshift-templates/blob/master/gitlab-runner/gitlab-runner.yaml
+#   http://blog.lwolf.org/post/how-to-easily-deploy-gitlab-on-kubernetes/
 #
-#Copyright (c) 2017 Oleksii Prudkyi
+# Copyright (c) 2018 Constantine Karnaukhov
 #
 apiVersion: v1
 kind: Template
@@ -13,6 +13,7 @@ labels:
   template: gitlab-runner-template
 metadata:
   annotations:
+    iconClass: "fa fa-gitlab"
     description: |
       GitLab Runner Service.
       It uses GitLab Runner image from official repository at docker hub.
@@ -21,10 +22,9 @@ metadata:
       containers (anyuid means commands inside containers can run as root)
         oc login -u system:admin
         oc adm policy add-scc-to-user anyuid -z sa-gitlab-runner -n CURRENT_PROJECT_NAME
-        oc adm policy add-scc-to-user anyuid -z sa-minio -n CURRENT_PROJECT_NAME
 
     openshift.io/display-name: GitLab Runner Service
-    tags: gitlab-runner
+    tags: "gitlab-runner, continuous integration, CI"
   creationTimestamp: null
   name: gitlab-runner
 objects:
@@ -42,10 +42,6 @@ objects:
       name: sa-gitlab-runner
   roleRef:
     name: edit
-- apiVersion: v1
-  kind: ServiceAccount
-  metadata:
-    name: sa-minio
 - apiVersion: v1
   kind: ImageStream
   metadata:
@@ -172,7 +168,7 @@ objects:
       check_interval = 0
 
       [[runners]]
-        name = "GitLab Runner"
+        name = "${GITLAB_RUNNER_NAME}"
         url = "${GITLAB_RUNNER_CI_URL}"
         token = "${GITLAB_RUNNER_TOKEN}"
         executor = "kubernetes"
@@ -193,137 +189,18 @@ objects:
           helper_image = ""
         [runners.cache]
           Type = "s3"
-          ServerAddress = "${MINIO_SERVICE_NAME}:80"
+          ServerAddress = "${MINIO_SERVER_ADDRESS}"
           AccessKey = "${MINIO_ACCESS_KEY}"
           SecretKey = "${MINIO_SECRET_KEY}"
-          BucketName = "bkt-gitlab-runner"
+          BucketName = "${MINIO_BUCKET_NAME}"
           Insecure = true
 
-### minio integration for cache
-# based on the https://github.com/lwolf/kubernetes-gitlab/tree/master/minio
-- apiVersion: v1
-  kind: ImageStream
-  metadata:
-    creationTimestamp: null
-    labels:
-      app: minio
-    name: is-minio
-  spec:
-    dockerImageRepository: ""
-    tags:
-      -
-       from:
-         kind: DockerImage
-         name: minio/minio:${MINIO_IMAGE_DOCKER_TAG}
-       name: minio_pseudo_tag
-       importPolicy:
-         scheduled: true
-  status:
-    dockerImageRepository: ""
-
-- apiVersion: v1
-  kind: Service
-  metadata:
-    creationTimestamp: null
-    name: ${MINIO_SERVICE_NAME}
-  spec:
-    portalIP: ""
-    ports:
-    - name: http
-      nodePort: 0
-      port: 80
-      protocol: TCP
-      targetPort: 9000
-    selector:
-      name: ${MINIO_SERVICE_NAME}
-    sessionAffinity: None
-    type: ClusterIP
-  status:
-    loadBalancer: {}
-
-- apiVersion: v1
-  kind: DeploymentConfig
-  metadata:
-    creationTimestamp: null
-    name: dc-${MINIO_SERVICE_NAME}
-  spec:
-    replicas: 1
-    selector:
-      name: ${MINIO_SERVICE_NAME}
-    strategy:
-      type: Recreate
-    template:
-      metadata:
-        creationTimestamp: null
-        labels:
-          name: ${MINIO_SERVICE_NAME}
-      spec:
-        containers:
-        - capabilities: {}
-          image: ' '
-          imagePullPolicy: IfNotPresent
-          readinessProbe:
-            exec:
-              command:
-              - /usr/bin/pgrep
-              - minio
-            initialDelaySeconds: 5
-            timeoutSeconds: 1
-          livenessProbe:
-            httpGet:
-              path: /minio/login
-              port: 9000
-            initialDelaySeconds: 15
-            timeoutSeconds: 10
-          name: cnt-minio
-          ports:
-          - containerPort: 9000
-            name: http
-            protocol: TCP
-          env:
-            - name: MINIO_ACCESS_KEY
-              value: ${MINIO_ACCESS_KEY}
-            - name: MINIO_SECRET_KEY
-              value: ${MINIO_SECRET_KEY}
-          command:
-            - /bin/sh
-            - '-c'
-            - >-
-              /bin/mkdir -p /export/bkt-gitlab-runner ; /usr/bin/minio server /export
-          resources:
-            limits:
-              cpu: 100m
-              memory: 100Mi
-            requests:
-              cpu: 100m
-              memory: 100Mi
-          securityContext:
-            capabilities: {}
-            privileged: false
-          terminationMessagePath: /dev/termination-log
-          volumeMounts:
-          - name: vol-minio-data-store
-            mountPath: /export
-        serviceAccountName: sa-minio
-        dnsPolicy: ClusterFirst
-        restartPolicy: Always
-        volumes:
-        - name: vol-minio-data-store
-          emptyDir: {}
-    triggers:
-    - imageChangeParams:
-        automatic: true
-        containerNames:
-        - cnt-minio
-        from:
-          kind: ImageStreamTag
-          name: is-minio:minio_pseudo_tag
-        lastTriggeredImage: ""
-      type: ImageChange
-    - type: ConfigChange
-  status: {}
-
 parameters:
+- displayName: GitLab Runner Name
+  name: GITLAB_RUNNER_NAME
+  required: true
+  value: Gitlab Runner Openshift
+
 - description: The GitLab CI coordinator URL (e.g. https://gitlab.com/).
   displayName: GitLab CI URL
   name: GITLAB_RUNNER_CI_URL
@@ -344,7 +221,7 @@ parameters:
   displayName: GitLab Runner jobs
   name: GITLAB_RUNNER_JOBS
   required: true
-  value: "2"
+  value: "5"
 
 - description: Maximum amount of memory the container can use.
   displayName: Memory Limit
@@ -363,24 +240,20 @@ parameters:
   value: "alpine"
 
 - description: The name of the OpenShift Service exposed for the Minio Cloud Storage.
-  displayName: Minio Cloud Storage Service Name
-  name: MINIO_SERVICE_NAME
+  displayName: Minio Server address
+  name: MINIO_SERVER_ADDRESS
   required: true
-  value: minio-service
-
-- description: Tag of Minio Cloud Storage image (latest or edge). Check https://hub.docker.com/r/minio/minio/tags/ for list of supported values
-  displayName: Minio Cloud Storage Image Tag at Docker Hub
-  name: MINIO_IMAGE_DOCKER_TAG
-  value: "latest"
 
 - description: Custom username or access key of 5 to 20 characters in length.
   displayName: Minio Cloud Storage Access Key
   name: MINIO_ACCESS_KEY
-  from: '[a-zA-Z0-9]{20}'
-  generate: expression
+  required: true
 
 - description: Custom password or secret key of 8 to 40 characters in length.
   displayName: Minio Cloud Storage Secret Key
   name: MINIO_SECRET_KEY
-  from: '[a-zA-Z0-9]{40}'
-  generate: expression
+  required: true
+
+- displayName: Bucket name in Minio for
+  name: MINIO_BUCKET_NAME
+  required: true
