@@ -21,7 +21,7 @@ metadata:
       Before you start, please setup Security Context Constraints (SCC) for service accounts used for running
       containers (anyuid means commands inside containers can run as root)
         oc login -u system:admin
-        oc adm policy add-scc-to-user anyuid -z sa-gitlab-runner -n CURRENT_PROJECT_NAME
+        oc adm policy add-scc-to-user anyuid -z ${GITLAB_RUNNER_NAME}-sa -n CURRENT_PROJECT_NAME
 
     openshift.io/display-name: GitLab Runner Service
     tags: "gitlab-runner, continuous integration, CI"
@@ -31,8 +31,8 @@ metadata:
 parameters:
 - displayName: GitLab Runner Name
   name: GITLAB_RUNNER_NAME
-  required: true
-  value: gitlab-runner-openshift-1
+  generate: expression
+  from: "gitlab-runner-openshift-[\d]{4}"
 
 - description: The GitLab CI coordinator URL (e.g. https://gitlab.yourdomain.com/).
   displayName: GitLab CI URL
@@ -54,24 +54,22 @@ objects:
 - apiVersion: v1
   kind: ServiceAccount
   metadata:
-    name: sa-gitlab-runner
+    name: ${GITLAB_RUNNER_NAME}-sa
 - apiVersion: v1
   kind: RoleBinding
   metadata:
-    name: edit
+    name: ${GITLAB_RUNNER_NAME}-rb-edit
   groupNames: null
   subjects:
     - kind: ServiceAccount
-      name: sa-gitlab-runner
+      name: ${GITLAB_RUNNER_NAME}-sa
   roleRef:
     name: edit
 - apiVersion: v1
   kind: ImageStream
   metadata:
     creationTimestamp: null
-    labels:
-      app: gitlab-runner
-    name: gitlab-runner
+    name: ${GITLAB_RUNNER_NAME}-is
   spec:
     dockerImageRepository: ""
     tags:
@@ -87,7 +85,7 @@ objects:
 - apiVersion: v1
   kind: PersistentVolumeClaim
   metadata:
-    name: ${GITLAB_RUNNER_NAME}-config
+    name: ${GITLAB_RUNNER_NAME}-pvc-config
   spec:
     accessModes:
     - ReadWriteOnce
@@ -97,7 +95,7 @@ objects:
 - apiVersion: v1
   kind: ConfigMap
   metadata:
-    name: cm-gitlab-runner
+    name: ${GITLAB_RUNNER_NAME}-scripts
   data:
     config.toml: |
       concurrent = 10
@@ -134,7 +132,7 @@ objects:
   kind: DeploymentConfig
   metadata:
     creationTimestamp: null
-    name: dc-${GITLAB_RUNNER_NAME}
+    name: ${GITLAB_RUNNER_NAME}
   spec:
     replicas: 1
     selector:
@@ -150,7 +148,7 @@ objects:
         - cnt-gitlab-runner
         from:
           kind: ImageStreamTag
-          name: gitlab-runner:${GITLAB_RUNNER_IMAGE_DOCKER_TAG}
+          name: ${GITLAB_RUNNER_NAME}-is:${GITLAB_RUNNER_IMAGE_DOCKER_TAG}
     template:
       metadata:
         creationTimestamp: null
@@ -160,13 +158,13 @@ objects:
         volumes:
         - name: gitlab-runner-scripts
           configMap:
-            name: cm-gitlab-runner
+            name: ${GITLAB_RUNNER_NAME}-scripts
         - name: gitlab-runner-config
           persistentVolumeClaim:
-            claimName: ${GITLAB_RUNNER_NAME}-config
+            claimName: ${GITLAB_RUNNER_NAME}-pvc-config
         containers:
         - name: cnt-gitlab-runner
-          image: gitlab-runner
+          image: ' '
           imagePullPolicy: IfNotPresent
           capabilities: {}
           env:
@@ -209,16 +207,16 @@ objects:
               command:
               - /usr/bin/pgrep
               - gitlab-runner
-            initialDelaySeconds: 5
+            initialDelaySeconds: 15
             timeoutSeconds: 1
           livenessProbe:
             exec:
               command:
               - /usr/bin/pgrep
               - gitlab-runner
-            initialDelaySeconds: 5
+            initialDelaySeconds: 15
             timeoutSeconds: 1
-        serviceAccountName: sa-gitlab-runner
+        serviceAccountName: ${GITLAB_RUNNER_NAME}-sa
         dnsPolicy: ClusterFirst
         restartPolicy: Always
   status: {}
