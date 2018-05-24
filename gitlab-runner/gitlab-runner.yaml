@@ -207,14 +207,14 @@ objects:
               command:
               - /usr/bin/pgrep
               - gitlab-runner
-            initialDelaySeconds: 15
+            initialDelaySeconds: 5
             timeoutSeconds: 1
           livenessProbe:
             exec:
               command:
               - /usr/bin/pgrep
               - gitlab-runner
-            initialDelaySeconds: 15
+            initialDelaySeconds: 5
             timeoutSeconds: 1
         serviceAccountName: ${GITLAB_RUNNER_NAME}-sa
         dnsPolicy: ClusterFirst
