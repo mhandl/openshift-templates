@@ -153,7 +153,7 @@ objects:
             name: cm-gitlab-runner
         - name: gitlab-runner-config
           persistentVolumeClaim:
-            name: ${GITLAB_RUNNER_NAME}-config
+            claimName: ${GITLAB_RUNNER_NAME}-config
         containers:
         - name: cnt-gitlab-runner
           image: gitlab-runner
