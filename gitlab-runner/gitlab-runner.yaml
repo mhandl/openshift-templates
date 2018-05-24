@@ -121,7 +121,7 @@ objects:
         fi
 
         # register runner using environment variables
-        /entrypoint register --non-interactive
+        /entrypoint register --non-interactive --url $GITLAB_RUNNER_CI_URL
       fi
 
       # Start the runner
@@ -168,7 +168,7 @@ objects:
           imagePullPolicy: IfNotPresent
           capabilities: {}
           env:
-          - name: CI_SERVER_URL
+          - name: GITLAB_RUNNER_CI_URL
             value: ${GITLAB_RUNNER_CI_URL}
           - name: REGISTRATION_TOKEN
             value: ${GITLAB_RUNNER_REGISTRATION_TOKEN}
