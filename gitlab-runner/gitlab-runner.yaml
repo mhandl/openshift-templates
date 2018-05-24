@@ -85,6 +85,16 @@ objects:
   status:
     dockerImageRepository: ""
 - apiVersion: v1
+  kind: PersistentVolumeClaim
+  metadata:
+    name: ${GITLAB_RUNNER_NAME}-config
+  spec:
+    accessModes:
+    - ReadWriteOnce
+    resources:
+      requests:
+        storage: 100Mi
+- apiVersion: v1
   kind: ConfigMap
   metadata:
     name: cm-gitlab-runner
@@ -181,6 +191,8 @@ objects:
           volumeMounts:
           - mountPath: /scripts
             name: gitlab-runner-scripts
+          - mountPath: /etc/gitlab-runner
+            name: gitlab-runner-config
           resources:
             limits:
               cpu: "600m"
