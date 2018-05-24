@@ -32,7 +32,7 @@ parameters:
 - displayName: GitLab Runner Name
   name: GITLAB_RUNNER_NAME
   generate: expression
-  from: "gitlab-runner-openshift-[\d]{4}"
+  from: "gitlab-runner-openshift-[0-9]{4}"
 
 - description: The GitLab CI coordinator URL (e.g. https://gitlab.yourdomain.com/).
   displayName: GitLab CI URL
