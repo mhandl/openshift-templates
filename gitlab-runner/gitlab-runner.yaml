@@ -16,18 +16,15 @@ metadata:
     iconClass: "fa fa-gitlab"
     description: |
       GitLab Runner Service.
-      It uses GitLab Runner image from official repository at docker hub.
-      https://hub.docker.com/r/gitlab/gitlab-runner/
-      Before you start, please setup Security Context Constraints (SCC) for service accounts used for running
-      containers (anyuid means commands inside containers can run as root)
-        oc login -u system:admin
-        oc adm policy add-scc-to-user anyuid -z ${GITLAB_RUNNER_NAME}-sa -n CURRENT_PROJECT_NAME
-
+      It uses GitLab Runner image from official repository at docker hub (https://hub.docker.com/r/gitlab/gitlab-runner/)
     openshift.io/display-name: GitLab Runner Service
     tags: "gitlab-runner, continuous integration, CI"
   creationTimestamp: null
   name: gitlab-runner
-
+message: >-
+  Before you start, please setup Security Context Constraints (SCC) for service accounts used for running containers (anyuid means commands inside containers can run as root)
+    oc login -u system:admin
+    oc adm policy add-scc-to-user anyuid -z ${GITLAB_RUNNER_NAME}-sa -n CURRENT_PROJECT_NAME
 parameters:
 - displayName: GitLab Runner Name
   name: GITLAB_RUNNER_NAME

@@ -1,0 +1,43 @@
+#
+# This file is part of https://github.com/hustlahusky/openshift-templates
+#
+# Copyright (c) 2018 Constantine Karnaukhov
+#
+
+apiVersion: v1
+kind: Template
+labels:
+  template: gitlab-openshift-cluster-starter
+metadata:
+  annotations:
+    iconClass: "fa fa-gitlab"
+    description: |
+      Simple template to start Openshift project and intergrate it to Gitlab project k8s cluster.
+      This template just creates service account with project membership as edit role.
+    openshift.io/display-name: Gitlab Openshift Cluster Starter
+    tags: "gitlab, continuous integration, CI"
+  creationTimestamp: null
+  name: gitlab-openshift-cluster-starter
+message: >-
+  Cool! Now you can go to your Gitlab project and create Kubernetes cluster integration. You can get long-lived token for devops service account for authorization:
+
+  oc sa get-token devops
+
+  If your project need root access rights for running do not forget to create anyuid policy:
+
+  oc adm policy add-scc-to-user anyuid -z default
+objects:
+- apiVersion: v1
+  kind: ServiceAccount
+  metadata:
+    name: devops
+- apiVersion: v1
+  kind: RoleBinding
+  metadata:
+    name: devops-edit
+  groupNames: null
+  subjects:
+    - kind: ServiceAccount
+      name: devops
+  roleRef:
+    name: edit
