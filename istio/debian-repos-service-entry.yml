@@ -1,0 +1,13 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: ServiceEntry
+metadata:
+  name: debian-repos-ext
+  namespace: istio-system
+spec:
+  hosts:
+  - deb.debian.org
+  - security.debian.org
+  ports:
+  - name: http
+    number: 80
+    protocol: HTTP
