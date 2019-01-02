@@ -35,7 +35,7 @@ parameters:
   displayName: GitLab CI URL
   name: GITLAB_RUNNER_CI_URL
   required: true
-  value: https://gitlab.com/ci
+  value: https://git.artin.io
 
 - description: Runner Registration Token from the GitLab app
   displayName: GitLab CI registration token
@@ -45,7 +45,7 @@ parameters:
 - description: Tag of GitLab Runner image (alpine or latest). Check https://hub.docker.com/r/gitlab/gitlab-runner/tags/ for list of supported values
   displayName: GitLab Runner Image Tag at Docker Hub
   name: GITLAB_RUNNER_IMAGE_DOCKER_TAG
-  value: "alpine"
+  value: "latest"
 
 objects:
 - apiVersion: v1
@@ -107,7 +107,7 @@ objects:
       # Check is any runner available
       countRunners() {
         n=$(/entrypoint list 2>&1 | wc -l) # count lines in list output
-        echo $(expr $n - 1) # decrease result to ignore header output 
+        echo $(expr $n - 1) # decrease result to ignore header output
       }
 
       # Register the runner
